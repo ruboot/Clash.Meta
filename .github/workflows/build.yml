@@ -272,14 +272,16 @@ jobs:
           fetch-depth: 0
 
       - name: Get tags
-        id: prev_version
         run: |
           ls -R
-          echo "::set-output name=CURRENTVERSION::${GITHUB_REF#refs/tags/}"
+          echo "CURRENTVERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           git fetch --tags
-          echo "::set-output name=PREVERSION::$(git describe --tags --abbrev=0 HEAD^)"
-          cp .github/workflows/genReleaseNote.sh ./
-          bash ./genReleaseNote.sh -v ${{ steps.prev_version.outputs.PREVERSION }}...${{ steps.get_version.outputs.CURRENTVERSION }}
+          echo "PREVERSION=$(git describe --tags --abbrev=0 HEAD^)" >> $GITHUB_ENV
+
+      - name: Generate release notes
+        run: |
+          cp ./.github/genReleaseNote.sh ./
+          bash ./genReleaseNote.sh -v ${PREVERSION}...${CURRENTVERSION}
           rm ./genReleaseNote.sh
 
       # - uses: actions/download-artifact@v3

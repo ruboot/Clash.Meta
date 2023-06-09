@@ -18,15 +18,15 @@ if [ -z "$version_range" ]; then
 fi
 
 echo "## What's Changed" > release.md
-git log --pretty=format:"* %s by @%an" --grep="^feat" -i $version_range | sort -f | uniq >> release.md
+git log --pretty=format:"* %s by @%an" --grep="^feat" --ignore-case $version_range | sort -f | uniq >> release.md
 echo "" >> release.md
 
 echo "## BUG & Fix" >> release.md
-git log --pretty=format:"* %s by @%an" --grep="^fix" -i $version_range | sort -f | uniq >> release.md
+git log --pretty=format:"* %s by @%an" --grep="^fix" --ignore-case $version_range | sort -f | uniq >> release.md
 echo "" >> release.md
 
 echo "## Maintenance" >> release.md
-git log --pretty=format:"* %s by @%an" --grep="^chore\|^docs\|^refator" -i $version_range | sort -f | uniq >> release.md
+git log --pretty=format:"* %s by @%an" --grep="^chore\|^docs\|^refator" --ignore-case $version_range | sort -f | uniq >> release.md
 echo "" >> release.md
 
 echo "**Full Changelog**: https://github.com/MetaCubeX/Clash.Meta/compare/$version_range" >> release.md
