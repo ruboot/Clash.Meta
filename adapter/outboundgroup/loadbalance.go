@@ -172,6 +172,11 @@ func (lb *LoadBalance) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Cleanup implements C.ProxyAdapter
+func (lb *LoadBalance) Cleanup() {
+	lb.single.Reset()
+}
+
 func NewLoadBalance(option *GroupCommonOption, providers []provider.ProxyProvider, strategy string) (lb *LoadBalance, err error) {
 	var strategyFn strategyFn
 	switch strategy {

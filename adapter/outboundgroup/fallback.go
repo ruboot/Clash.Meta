@@ -80,6 +80,11 @@ func (f *Fallback) Unwrap(_ *C.Metadata) C.Proxy {
 	return proxy
 }
 
+// Cleanup implements C.ProxyAdapter
+func (f *Fallback) Cleanup() {
+	f.single.Reset()
+}
+
 func (f *Fallback) proxies(touch bool) []C.Proxy {
 	elm, _, _ := f.single.Do(func() ([]C.Proxy, error) {
 		return getProvidersProxies(f.providers, touch), nil

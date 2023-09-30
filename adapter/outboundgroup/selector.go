@@ -90,6 +90,11 @@ func (s *Selector) Unwrap(_ *C.Metadata) C.Proxy {
 	return s.selectedProxy(true)
 }
 
+// Cleanup implements C.ProxyAdapter
+func (s *Selector) Cleanup() {
+	s.single.Reset()
+}
+
 func (s *Selector) selectedProxy(touch bool) C.Proxy {
 	elm, _, _ := s.single.Do(func() (C.Proxy, error) {
 		proxies := getProvidersProxies(s.providers, touch)

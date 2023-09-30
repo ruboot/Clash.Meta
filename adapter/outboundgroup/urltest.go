@@ -133,6 +133,11 @@ func (u *URLTest) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Cleanup implements C.ProxyAdapter
+func (u *URLTest) Cleanup() {
+	u.single.Reset()
+}
+
 func parseURLTestOption(config map[string]any) []urlTestOption {
 	var opts []urlTestOption
 
@@ -158,7 +163,7 @@ func NewURLTest(option *GroupCommonOption, providers []provider.ProxyProvider, o
 			RoutingMark: option.RoutingMark,
 		}),
 		single:     singledo.NewSingle[[]C.Proxy](defaultGetProxiesDuration),
-		fastSingle: singledo.NewSingle[C.Proxy](time.Second * 10),
+		fastSingle: singledo.NewSingle[C.Proxy](time.Second),
 		providers:  providers,
 		disableUDP: option.DisableUDP,
 		disableDNS: option.DisableDNS,

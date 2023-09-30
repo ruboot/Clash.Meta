@@ -55,7 +55,15 @@ func (s *Single[T]) Do(fn func() (T, error)) (v T, err error, shared bool) {
 }
 
 func (s *Single[T]) Reset() {
+	s.mux.Lock()
+	if s.result != nil {
+		var zero T
+		s.result.Val = zero
+		s.result.Err = nil
+		s.result = nil
+	}
 	s.last = time.Time{}
+	s.mux.Unlock()
 }
 
 func NewSingle[T any](wait time.Duration) *Single[T] {
@@ -95,8 +103,8 @@ func (g *Group[T]) Forget(key string) {
 		return
 	}
 	if c, ok := g.m[key]; ok {
-		var v T
-		c.val = v
+		var zero T
+		c.val = zero
 	}
 	delete(g.m, key)
 	g.mu.Unlock()

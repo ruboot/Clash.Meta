@@ -226,6 +226,11 @@ func (r *Relay) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Cleanup implements C.ProxyAdapter
+func (r *Relay) Cleanup() {
+	r.single.Reset()
+}
+
 func (r *Relay) rawProxies(touch bool) []C.Proxy {
 	elm, _, _ := r.single.Do(func() ([]C.Proxy, error) {
 		return getProvidersProxies(r.providers, touch), nil
