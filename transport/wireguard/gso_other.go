@@ -2,4 +2,4 @@
 
 package wireguard
 
-const srcControlSize = 0
+const gsoControlSize = 0
