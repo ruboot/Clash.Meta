@@ -1,4 +1,4 @@
-package cache
+package lru
 
 // Modified by https://github.com/die-net/lrucache
 
@@ -81,7 +81,7 @@ func New[K comparable, V any](options ...Option[K, V]) *LruCache[K, V] {
 	return lc
 }
 
-// Get returns the any representation of a cached response and a bool
+// Get returns any representation of a cached response and a bool
 // set to true if the key was found.
 func (c *LruCache[K, V]) Get(key K) (V, bool) {
 	c.mu.Lock()
@@ -111,7 +111,7 @@ func (c *LruCache[K, V]) GetOrStore(key K, constructor func() V) (V, bool) {
 	return value, true
 }
 
-// GetWithExpire returns the any representation of a cached response,
+// GetWithExpire returns any representation of a cached response,
 // a time.Time Give expected expires,
 // and a bool set to true if the key was found.
 // This method will NOT check the maxAge of element and will NOT update the expires.
@@ -136,7 +136,21 @@ func (c *LruCache[K, V]) Exist(key K) bool {
 	return ok
 }
 
-// Set stores the any representation of a response for a given key.
+// Peek returns if key exist in cache but not put item to the head of linked list
+func (c *LruCache[K, V]) Peek(key K) (value V, ok bool) {
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if le, ok := c.cache[key]; ok {
+		return le.Value.value, true
+	}
+
+	return lo.Empty[V](), false
+
+}
+
+// Set stores any representation of a response for a given key.
 func (c *LruCache[K, V]) Set(key K, value V) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -152,7 +166,7 @@ func (c *LruCache[K, V]) set(key K, value V) {
 	c.setWithExpire(key, value, time.Unix(expires, 0))
 }
 
-// SetWithExpire stores the any representation of a response for a given key and given expires.
+// SetWithExpire stores any representation of a response for a given key and given expires.
 // The expires time will round to second.
 func (c *LruCache[K, V]) SetWithExpire(key K, value V, expires time.Time) {
 	c.mu.Lock()
@@ -247,6 +261,17 @@ func (c *LruCache[K, V]) deleteElement(le *list.Element[*entry[K, V]]) {
 	}
 }
 
+func (c *LruCache[K, V]) DeleteOldest() (key K) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if le := c.lru.Back(); le != nil {
+		c.deleteElement(le)
+		key = le.Value.key
+	}
+	return key
+}
+
 func (c *LruCache[K, V]) Clear() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -254,6 +279,13 @@ func (c *LruCache[K, V]) Clear() error {
 	c.cache = make(map[K]*list.Element[*entry[K, V]])
 
 	return nil
+}
+
+func (c *LruCache[K, V]) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.lru.Len()
 }
 
 type entry[K comparable, V any] struct {

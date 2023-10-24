@@ -7,14 +7,14 @@ import (
 	"strings"
 
 	"github.com/Dreamacro/clash/adapter/inbound"
-	"github.com/Dreamacro/clash/common/cache"
+	"github.com/Dreamacro/clash/common/cache/lru"
 	N "github.com/Dreamacro/clash/common/net"
 	C "github.com/Dreamacro/clash/constant"
 	authStore "github.com/Dreamacro/clash/listener/auth"
 	"github.com/Dreamacro/clash/log"
 )
 
-func HandleConn(c net.Conn, tunnel C.Tunnel, cache *cache.LruCache[string, bool], additions ...inbound.Addition) {
+func HandleConn(c net.Conn, tunnel C.Tunnel, cache *lru.LruCache[string, bool], additions ...inbound.Addition) {
 	client := newClient(c, tunnel, additions...)
 	defer client.CloseIdleConnections()
 
@@ -98,7 +98,7 @@ func HandleConn(c net.Conn, tunnel C.Tunnel, cache *cache.LruCache[string, bool]
 	_ = conn.Close()
 }
 
-func authenticate(request *http.Request, cache *cache.LruCache[string, bool]) *http.Response {
+func authenticate(request *http.Request, cache *lru.LruCache[string, bool]) *http.Response {
 	authenticator := authStore.Authenticator()
 	if inbound.SkipAuthRemoteAddress(request.RemoteAddr) {
 		authenticator = nil

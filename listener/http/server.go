@@ -4,7 +4,7 @@ import (
 	"net"
 
 	"github.com/Dreamacro/clash/adapter/inbound"
-	"github.com/Dreamacro/clash/common/cache"
+	"github.com/Dreamacro/clash/common/cache/lru"
 	C "github.com/Dreamacro/clash/constant"
 )
 
@@ -47,9 +47,9 @@ func NewWithAuthenticate(addr string, tunnel C.Tunnel, authenticate bool, additi
 		return nil, err
 	}
 
-	var c *cache.LruCache[string, bool]
+	var c *lru.LruCache[string, bool]
 	if authenticate {
-		c = cache.New[string, bool](cache.WithAge[string, bool](30))
+		c = lru.New[string, bool](lru.WithAge[string, bool](30))
 	}
 
 	hl := &Listener{

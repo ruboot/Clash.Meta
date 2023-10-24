@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dreamacro/clash/common/cache"
+	"github.com/Dreamacro/clash/common/cache/lru"
 	"github.com/Dreamacro/clash/component/fakeip"
 	"github.com/Dreamacro/clash/component/geodata/router"
 	"github.com/Dreamacro/clash/component/resolver"
@@ -51,7 +51,7 @@ type Resolver struct {
 	fallbackDomainFilters []fallbackDomainFilter
 	fallbackIPFilters     []fallbackIPFilter
 	group                 singleflight.Group
-	lruCache              *cache.LruCache[string, *D.Msg]
+	lruCache              *lru.LruCache[string, *D.Msg]
 	policy                *trie.DomainTrie[*Policy]
 	domainSetPolicy       []domainSetPolicyRecord
 	geositePolicy         []geositePolicyRecord
@@ -421,14 +421,14 @@ type Config struct {
 func NewResolver(config Config) *Resolver {
 	defaultResolver := &Resolver{
 		main:        transform(config.Default, nil),
-		lruCache:    cache.New(cache.WithSize[string, *D.Msg](4096), cache.WithStale[string, *D.Msg](true)),
+		lruCache:    lru.New(lru.WithSize[string, *D.Msg](4096), lru.WithStale[string, *D.Msg](true)),
 		ipv6Timeout: time.Duration(config.IPv6Timeout) * time.Millisecond,
 	}
 
 	r := &Resolver{
 		ipv6:        config.IPv6,
 		main:        transform(config.Main, defaultResolver),
-		lruCache:    cache.New(cache.WithSize[string, *D.Msg](4096), cache.WithStale[string, *D.Msg](true)),
+		lruCache:    lru.New(lru.WithSize[string, *D.Msg](4096), lru.WithStale[string, *D.Msg](true)),
 		hosts:       config.Hosts,
 		ipv6Timeout: time.Duration(config.IPv6Timeout) * time.Millisecond,
 	}

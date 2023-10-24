@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dreamacro/clash/common/cache"
+	"github.com/Dreamacro/clash/common/cache/lru"
 	N "github.com/Dreamacro/clash/common/net"
 	"github.com/Dreamacro/clash/common/nnip"
 	"github.com/Dreamacro/clash/common/picker"
@@ -51,7 +51,7 @@ func updateTTL(records []D.RR, ttl uint32) {
 	}
 }
 
-func putMsgToCache(c *cache.LruCache[string, *D.Msg], key string, q D.Question, msg *D.Msg) {
+func putMsgToCache(c *lru.LruCache[string, *D.Msg], key string, q D.Question, msg *D.Msg) {
 	// skip dns cache for acme challenge
 	if q.Qtype == D.TypeTXT && strings.HasPrefix(q.Name, "_acme-challenge.") {
 		log.Debugln("[DNS] dns cache ignored because of acme challenge for: %s", q.Name)

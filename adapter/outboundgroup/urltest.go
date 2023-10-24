@@ -97,7 +97,6 @@ func (u *URLTest) Unwrap(metadata *C.Metadata, touch bool) C.Proxy {
 }
 
 func (u *URLTest) fast(touch bool) C.Proxy {
-
 	proxies := u.GetProxies(touch)
 	if u.selected != "" {
 		for _, proxy := range proxies {

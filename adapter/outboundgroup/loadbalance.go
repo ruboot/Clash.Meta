@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"net"
 	"sync"
 	"time"
 
 	"github.com/Dreamacro/clash/adapter/outbound"
-	"github.com/Dreamacro/clash/common/cache"
+	"github.com/Dreamacro/clash/common/cache/lru"
 	"github.com/Dreamacro/clash/common/callback"
 	N "github.com/Dreamacro/clash/common/net"
 	"github.com/Dreamacro/clash/common/utils"
@@ -190,9 +191,9 @@ func strategyConsistentHashing(url string) strategyFn {
 func strategyStickySessions(url string) strategyFn {
 	ttl := time.Minute * 10
 	maxRetry := 5
-	lruCache := cache.New[uint64, int](
-		cache.WithAge[uint64, int](int64(ttl.Seconds())),
-		cache.WithSize[uint64, int](1000))
+	lruCache := lru.New[uint64, int](
+		lru.WithAge[uint64, int](int64(ttl.Seconds())),
+		lru.WithSize[uint64, int](1000))
 	return func(proxies []C.Proxy, metadata *C.Metadata, touch bool) C.Proxy {
 		key := utils.MapHash(getKeyWithSrcAndDst(metadata))
 		length := len(proxies)
