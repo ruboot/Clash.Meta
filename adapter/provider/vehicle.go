@@ -13,6 +13,7 @@ import (
 
 	"github.com/Dreamacro/clash/common/convert"
 	"github.com/Dreamacro/clash/component/dialer"
+	"github.com/Dreamacro/clash/component/profile/cachefile"
 	"github.com/Dreamacro/clash/constant"
 	types "github.com/Dreamacro/clash/constant/provider"
 	"github.com/Dreamacro/clash/listener/auth"
@@ -47,10 +48,11 @@ func NewFileVehicle(path string) *FileVehicle {
 var _ types.Vehicle = (*HTTPVehicle)(nil)
 
 type HTTPVehicle struct {
-	path     string
-	url      string
-	urlProxy bool
-	header   http.Header
+	path         string
+	url          string
+	urlProxy     bool
+	header       http.Header
+	subscription *Subscription
 }
 
 func (h *HTTPVehicle) Type() types.VehicleType {
@@ -140,15 +142,39 @@ func (h *HTTPVehicle) Read() ([]byte, error) {
 		return nil, err
 	}
 
+	userinfo := resp.Header.Get("Subscription-Userinfo")
+	if userinfo != "" {
+		if h.subscription == nil {
+			h.subscription = &Subscription{}
+		}
+		h.subscription.parse(userinfo)
+		if h.subscription.Total != 0 {
+			cachefile.Cache().SetSubscription(h.url, userinfo)
+		}
+	}
+
 	return removeComment(buf), nil
 }
 
+func (h *HTTPVehicle) Subscription() *Subscription {
+	return h.subscription
+}
+
 func NewHTTPVehicle(path string, url string, urlProxy bool, header http.Header) *HTTPVehicle {
+	var (
+		userinfo     = cachefile.Cache().GetSubscription(url)
+		subscription *Subscription
+	)
+	if userinfo != "" {
+		subscription = &Subscription{}
+		subscription.parse(userinfo)
+	}
 	return &HTTPVehicle{
-		path:     path,
-		url:      url,
-		urlProxy: urlProxy,
-		header:   header,
+		path:         path,
+		url:          url,
+		urlProxy:     urlProxy,
+		header:       header,
+		subscription: subscription,
 	}
 }
 

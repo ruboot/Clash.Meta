@@ -19,7 +19,7 @@ type HealthCheck struct {
 	url       string
 	proxies   []C.Proxy
 	proxiesFn func() []C.Proxy
-	interval  time.Duration
+	interval  *atomic.Duration
 	lazy      bool
 	lastTouch *atomic.Int64
 	ticker    *time.Ticker
@@ -27,21 +27,18 @@ type HealthCheck struct {
 }
 
 func (hc *HealthCheck) process() {
-	defer func() {
-		_ = recover()
-	}()
-
-	if hc.ticker != nil {
+	interval := hc.interval.Load()
+	if hc.ticker != nil || interval == 0 {
 		return
 	}
 
-	hc.ticker = time.NewTicker(hc.interval)
+	hc.ticker = time.NewTicker(interval)
 
 	for {
 		select {
 		case <-hc.ticker.C:
 			now := time.Now().UnixNano()
-			if !hc.lazy || now-hc.lastTouch.Load() < int64(hc.interval) {
+			if !hc.lazy || now-hc.lastTouch.Load() < int64(interval) {
 				hc.checkAll()
 			} else { // lazy but still need to check not alive proxies
 				notAliveProxies := lo.Filter(hc.getProxies(), func(proxy C.Proxy, _ int) bool {
@@ -68,7 +65,7 @@ func (hc *HealthCheck) setProxyFn(proxiesFn func() []C.Proxy) {
 }
 
 func (hc *HealthCheck) auto() bool {
-	return hc.interval != 0
+	return hc.interval.Load() != 0
 }
 
 func (hc *HealthCheck) touch() {
@@ -107,7 +104,7 @@ func (hc *HealthCheck) close() {
 	if hc.ticker != nil {
 		hc.done <- struct{}{}
 	}
-	hc.interval = 0
+	hc.interval.Store(0)
 	hc.proxiesFn = nil
 	hc.proxies = nil
 }
@@ -119,7 +116,7 @@ func NewHealthCheck(proxies []C.Proxy, url string, interval time.Duration, lazy 
 	return &HealthCheck{
 		proxies:   proxies,
 		url:       url,
-		interval:  interval,
+		interval:  atomic.NewDuration(interval),
 		lazy:      lazy,
 		lastTouch: atomic.NewInt64(0),
 		done:      make(chan struct{}, 1),

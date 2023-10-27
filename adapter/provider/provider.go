@@ -56,11 +56,12 @@ type ProxySetProvider struct {
 
 func (pp *ProxySetProvider) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
-		"name":        pp.Name(),
-		"type":        pp.Type().String(),
-		"vehicleType": pp.VehicleType().String(),
-		"proxies":     pp.Proxies(),
-		"updatedAt":   pp.updatedAt,
+		"name":         pp.Name(),
+		"type":         pp.Type().String(),
+		"vehicleType":  pp.VehicleType().String(),
+		"proxies":      pp.Proxies(),
+		"subscription": pp.subscription(),
+		"updatedAt":    pp.updatedAt,
 	})
 }
 
@@ -214,6 +215,13 @@ func (pp *ProxySetProvider) setProxies(proxies []C.Proxy) {
 
 func (pp *ProxySetProvider) addGroupName(name string) {
 	pp.groupNames = append(pp.groupNames, name)
+}
+
+func (pp *ProxySetProvider) subscription() *Subscription {
+	if s, ok := pp.vehicle.(interface{ Subscription() *Subscription }); ok {
+		return s.Subscription()
+	}
+	return nil
 }
 
 func NewProxySetProvider(

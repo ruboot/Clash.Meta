@@ -15,8 +15,9 @@ import (
 var (
 	fileMode os.FileMode = 0o666
 
-	bucketSelected = []byte("selected")
-	bucketFakeip   = []byte("fakeip")
+	bucketSelected     = []byte("selected")
+	bucketFakeip       = []byte("fakeip")
+	bucketSubscription = []byte("subscription")
 )
 
 // CacheFile store and update the cache file
@@ -141,6 +142,45 @@ func (c *CacheFile) FlushFakeIP() error {
 		return t.DeleteBucket(bucketFakeip)
 	})
 	return err
+}
+
+func (c *CacheFile) SetSubscription(key, value string) {
+	if c.DB == nil {
+		return
+	}
+
+	err := c.DB.Batch(func(t *bbolt.Tx) error {
+		bucket, err := t.CreateBucketIfNotExists(bucketSubscription)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(key), []byte(value))
+	})
+	if err != nil {
+		log.Warn().Err(err).Msgf("[CacheFile] write cache to %s failed", c.DB.Path())
+		return
+	}
+}
+
+func (c *CacheFile) GetSubscription(key string) string {
+	if c.DB == nil {
+		return ""
+	}
+
+	tx, err := c.DB.Begin(false)
+	if err != nil {
+		return ""
+	}
+	defer func(tx *bbolt.Tx) {
+		_ = tx.Rollback()
+	}(tx)
+
+	bucket := tx.Bucket(bucketSubscription)
+	if bucket == nil {
+		return ""
+	}
+
+	return string(bucket.Get([]byte(key)))
 }
 
 func (c *CacheFile) Close() error {
