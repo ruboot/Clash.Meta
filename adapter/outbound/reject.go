@@ -13,6 +13,7 @@ import (
 
 type Reject struct {
 	*Base
+	drop bool
 }
 
 type RejectOption struct {
@@ -21,12 +22,12 @@ type RejectOption struct {
 
 // DialContext implements C.ProxyAdapter
 func (r *Reject) DialContext(ctx context.Context, metadata *C.Metadata, opts ...dialer.Option) (C.Conn, error) {
-	return NewConn(nopConn{}, r), nil
+	return NewConn(nopConn{drop: r.drop}, r), nil
 }
 
 // ListenPacketContext implements C.ProxyAdapter
 func (r *Reject) ListenPacketContext(ctx context.Context, metadata *C.Metadata, opts ...dialer.Option) (C.PacketConn, error) {
-	return newPacketConn(nopPacketConn{}, r), nil
+	return newPacketConn(&nopPacketConn{r.drop}, r), nil
 }
 
 func NewRejectWithOption(option RejectOption) *Reject {
@@ -50,6 +51,18 @@ func NewReject() *Reject {
 	}
 }
 
+func NewRejectDrop() *Reject {
+	return &Reject{
+		Base: &Base{
+			name:   "REJECT-DROP",
+			tp:     C.RejectDrop,
+			udp:    true,
+			prefer: C.DualStack,
+		},
+		drop: true,
+	}
+}
+
 func NewPass() *Reject {
 	return &Reject{
 		Base: &Base{
@@ -61,23 +74,20 @@ func NewPass() *Reject {
 	}
 }
 
-type nopConn struct{}
+type nopConn struct{ drop bool }
 
-func (rw nopConn) Read(b []byte) (int, error) {
-	return 0, io.EOF
-}
+func (rw nopConn) Read(b []byte) (int, error) { return 0, io.EOF }
 
 func (rw nopConn) ReadBuffer(buffer *buf.Buffer) error {
+	if rw.drop {
+		time.Sleep(C.DefaultDropTime)
+	}
 	return io.EOF
 }
 
-func (rw nopConn) Write(b []byte) (int, error) {
-	return 0, io.EOF
-}
+func (rw nopConn) Write(b []byte) (int, error) { return 0, io.EOF }
 
-func (rw nopConn) WriteBuffer(buffer *buf.Buffer) error {
-	return io.EOF
-}
+func (rw nopConn) WriteBuffer(buffer *buf.Buffer) error { return io.EOF }
 
 func (rw nopConn) Close() error                     { return nil }
 func (rw nopConn) LocalAddr() net.Addr              { return nil }
@@ -88,10 +98,20 @@ func (rw nopConn) SetWriteDeadline(time.Time) error { return nil }
 
 var udpAddrIPv4Unspecified = &net.UDPAddr{IP: net.IPv4zero, Port: 0}
 
-type nopPacketConn struct{}
+type nopPacketConn struct{ drop bool }
 
-func (npc nopPacketConn) WriteTo(b []byte, addr net.Addr) (n int, err error) { return len(b), nil }
-func (npc nopPacketConn) ReadFrom(b []byte) (int, net.Addr, error)           { return 0, nil, io.EOF }
+func (npc nopPacketConn) WriteTo(b []byte, addr net.Addr) (n int, err error) {
+	if npc.drop {
+		time.Sleep(C.DefaultDropTime)
+	}
+	return len(b), nil
+}
+func (npc nopPacketConn) ReadFrom(b []byte) (int, net.Addr, error) {
+	if npc.drop {
+		time.Sleep(C.DefaultDropTime)
+	}
+	return 0, nil, io.EOF
+}
 func (npc nopPacketConn) WaitReadFrom() ([]byte, func(), net.Addr, error) {
 	return nil, nil, nil, io.EOF
 }
